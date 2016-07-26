@@ -2,6 +2,11 @@ from uuid import uuid1
 
 from django.contrib.auth.models import User
 from django.db import models
+from django.dispatch.dispatcher import receiver
+from django.db.models.signals import post_save
+from rest_framework.authtoken.models import Token
+from django.conf import settings
+
 
 # Create your models here.
 
@@ -10,11 +15,18 @@ def photos_directory(instance, filename):
 
 class Photo(models.Model):
     user = models.ForeignKey(User)
-    counter_like = models.IntegerField(default=0)
     photo = models.ImageField(upload_to=photos_directory, null=True)
 
-
 class Comment(models.Model):
-    user_id = models.ForeignKey(User)
-    photo_id = models.ForeignKey(Photo)
-    text = models.TextField(null=False)
+    user_id=models.ForeignKey(User, null=True)
+    photo_id=models.ForeignKey(Photo)
+    comments=models.TextField()
+
+class Like(models.Model):
+    photo = models.ForeignKey(Photo)
+    user = models.ForeignKey(User)
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_auth_token(sender, instance=None, created=False, **kwargs):
+    if created:
+        Token.objects.create(user=instance)
